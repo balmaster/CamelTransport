@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Configures the Camel Context-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+       xmlns:camel="http://camel.apache.org/schema/spring"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
+		http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <camel:camelContext xmlns="http://camel.apache.org/schema/spring">
+        <camel:route>
+            <from uri="timer://timer1?period=2s"/>
+            <process ref="readStateProcessor"/>
+            <setBody>
+                <constant>
+                    SELECT a.ID, a.STATISTIC_ID, a.REC_TYPE, a.REC_DATETIME, a.REC_LENGTH, a.FAVORITE_IDRECORD,
+                    a.FAVORITE_IDUSER, a.FAVORITE_TYPESOURCE, a.ABONENT_A_ID, a.ABONENT_B_ID, a.FILE_A, a.FILE_B,
+                    a.NUMBER_A, a.NUMBER_B, a.LISTEN_DATETIME, a.LISTEN_IDUSER, a.NOTE_A, a.NOTE_B, a.SERVER_ID
+                    FROM A_RECORDS a where a.ID > :?aRecordsCurrentId order by a.ID
+                </constant>
+            </setBody>
+            <to uri="jdbc:infDataSource?readSize=10&amp;useHeadersAsParameters=true"/>
+            <split>
+                <simple>${body}</simple>
+                <to uri="log:insertLog?showHeaders=true"/>
+                <setHeader headerName="aRecordsCurrentId">
+                    <simple>${body['ID']}</simple>
+                </setHeader>
+                <process ref="writeStateProcessor"/>
+            </split>
+        </camel:route>
+    </camel:camelContext>
+
+    <bean id="readStateProcessor" class="camel_transport.ReadStateProcessor">
+        <property name="stateFile" value="D:/Projects/CamelTransport/exporter/target/state.xml"/>
+    </bean>
+
+    <bean id="writeStateProcessor" class="camel_transport.WriteStateProcessor">
+        <property name="stateFile" value="D:/Projects/CamelTransport/exporter/target/state.xml"/>
+    </bean>
+
+    <bean id="infDataSource" class="org.firebirdsql.pool.FBSimpleDataSource">
+        <property name="database" value="//localhost:3050/INFDATA"/>
+        <property name="userName" value="SYSDBA"/>
+        <property name="password" value="masterkey"/>
+        <property name="type" value="TYPE4"/>
+    </bean>
+
+
+</beans>
