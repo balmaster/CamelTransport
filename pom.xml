@@ -3,16 +3,10 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-<parent>
   <groupId>camel_transport</groupId>
   <version>1.0-SNAPSHOT</version>
-	<artifactId>camel_transport</artifactId>
-</parent>
-  <artifactId>exporter</artifactId>
-  <packaging>jar</packaging>
-
-  <name>A Camel Spring Route</name>
-  <url>http://www.myorganization.org</url>
+  <artifactId>camel_transport</artifactId>
+  <packaging>pom</packaging>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -71,36 +65,7 @@
     </dependency>
 
   </dependencies>
-
-  <build>
-    <defaultGoal>install</defaultGoal>
-
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.5.1</version>
-        <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-resources-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <encoding>UTF-8</encoding>
-        </configuration>
-      </plugin>
-
-      <!-- allows the route to be ran via 'mvn camel:run' -->
-      <plugin>
-        <groupId>org.apache.camel</groupId>
-        <artifactId>camel-maven-plugin</artifactId>
-        <version>2.12.2</version>
-      </plugin>
-    </plugins>
-  </build>
-
+	<modules>
+		<module>exporter</module>
+	</modules>
 </project>
