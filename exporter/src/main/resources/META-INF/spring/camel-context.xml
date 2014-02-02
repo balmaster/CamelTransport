@@ -1,53 +1,127 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Configures the Camel Context-->
+<!-- Configures the Camel Context -->
 
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:jdbc="http://www.springframework.org/schema/jdbc"
-       xmlns:camel="http://camel.apache.org/schema/spring"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:c="http://camel.apache.org/schema/spring"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
 		http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
 
-    <camel:camelContext xmlns="http://camel.apache.org/schema/spring">
-        <camel:route>
-            <from uri="timer://timer1?period=2s"/>
-            <process ref="readStateProcessor"/>
-            <setBody>
-                <constant>
-                    SELECT a.ID, a.STATISTIC_ID, a.REC_TYPE, a.REC_DATETIME, a.REC_LENGTH, a.FAVORITE_IDRECORD,
-                    a.FAVORITE_IDUSER, a.FAVORITE_TYPESOURCE, a.ABONENT_A_ID, a.ABONENT_B_ID, a.FILE_A, a.FILE_B,
-                    a.NUMBER_A, a.NUMBER_B, a.LISTEN_DATETIME, a.LISTEN_IDUSER, a.NOTE_A, a.NOTE_B, a.SERVER_ID
-                    FROM A_RECORDS a where a.ID > :?aRecordsCurrentId order by a.ID
-                </constant>
-            </setBody>
-            <to uri="jdbc:infDataSource?readSize=10&amp;useHeadersAsParameters=true"/>
-            <split>
-                <simple>${body}</simple>
-                <to uri="log:insertLog?showHeaders=true"/>
-                <setHeader headerName="aRecordsCurrentId">
-                    <simple>${body['ID']}</simple>
-                </setHeader>
-                <process ref="writeStateProcessor"/>
-            </split>
-        </camel:route>
-    </camel:camelContext>
+	<c:camelContext xmlns="http://camel.apache.org/schema/spring">
+		<c:route>
+			<c:from uri="timer://timer1?period=2s" />
+			<c:process ref="loadState" />
+			<c:setBody>
+				<c:constant>
+                    SELECT ar.ID, 
+                    doubletodatetime(ar.REC_DATETIME) as FROM_DATE, 
+                    doubletodatetime(ar.REC_DATETIME + ar.REC_LENGTH) as TO_DATE, 
+					au.NAME as OPERATOR_NAME,
+					ar.FILE_A, 
+					ar.FILE_B,
+                    ar.NUMBER_B, ar.NOTE_A
+                    FROM A_RECORDS ar left join A_USERS au on ar.abonent_b_id = au.id 
+                    where ar.abonent_b_id is not null
+                    and ar.id > :?aRecordsCurrentId 
+                    order by ar.id                
+                 </c:constant>
+			</c:setBody>
+			<c:to
+				uri="jdbc:infDataSource?readSize=10&amp;useHeadersAsParameters=true" />
+			<c:aggregate completionTimeout="1000" completionSize="5"
+				groupExchanges="true">
+				<c:correlationExpression>
+					<c:constant>true</c:constant>
+				</c:correlationExpression>
+				<c:split parallelProcessing="true">
+					<simple>${body}</simple>
+					<setHeader headerName="aRecordsCurrentId">
+						<simple>${body['ID']}</simple>
+					</setHeader>
+					<setHeader headerName="operatorName">
+						<simple>${body['OPERATOR_NAME']}</simple>
+					</setHeader>
+					<setHeader headerName="fromDate">
+						<simple>${body['FROM_DATE']}</simple>
+					</setHeader>
+					<setHeader headerName="toDate">
+						<simple>${body['TO_DATE']}</simple>
+					</setHeader>
+					<setHeader headerName="fileA">
+						<simple>${body['FILE_A']}</simple>
+					</setHeader>
+					<setHeader headerName="fileB">
+						<simple>${body['FILE_B']}</simple>
+					</setHeader>
+					<setHeader headerName="actFile">
+						<simple>${body['ID']}.mp3</simple>
+					</setHeader>
+					<c:process ref="mapOperator" />
+					<c:setBody>
+						<c:constant>
+                			select mos.to_date,mos.meta_obj_id,mos.act_id, pu.name
+							from meta_obj_stats mos join ps_user pu on mos.ps_user_id=pu.id
+							where pu.name = :?operatorName and (mos.to_date between :?fromDate and :?toDate)
+						</c:constant>
+					</c:setBody>
+					<to
+						uri="jdbc:metaDataSource?readSize=1&amp;useHeadersAsParameters=true" />
+					<setHeader headerName="metaObjId">
+						<simple>${body['META_OBJ_ID']}</simple>
+					</setHeader>
+					<setHeader headerName="actId">
+						<simple>${body['ACT_ID']}</simple>
+					</setHeader>
+					<setHeader headerName="metaObjToDate">
+						<simple>${body['TO_DATE']}</simple>
+					</setHeader>
+					<to uri="direct:convert" />
+				</c:split>
+			</c:aggregate>
+<!-- 			<to uri="log:mainLog" /> -->
+			<process ref="saveState" />
+		</c:route>
+		<c:route>
+			<c:from uri="direct:convert" />
+			<setHeader headerName="metaObjToDate">
+				<simple>${body['TO_DATE']}</simple>
+			</setHeader>
+			<c:to uri="exec://ffmpeg?useStderrOnEmptyStdout=true&amp;args=-i ${header.fileA} -i ${header.fileB} -filter_complex amerge -c:a libmp3lame -q:a 4 ${header.actFile}" />
+<!-- 			<to uri="log:convertLog?showHeaders=true" /> -->
+		</c:route>
+	</c:camelContext>
 
-    <bean id="readStateProcessor" class="camel_transport.ReadStateProcessor">
-        <property name="stateFile" value="D:/Projects/CamelTransport/exporter/target/state.xml"/>
-    </bean>
+	<bean id="loadState" class="camel_transport.StateProcessor">
+		<property name="method" value="load" />
+		<property name="stateFile" value="state.xml" />
+	</bean>
 
-    <bean id="writeStateProcessor" class="camel_transport.WriteStateProcessor">
-        <property name="stateFile" value="D:/Projects/CamelTransport/exporter/target/state.xml"/>
-    </bean>
+	<bean id="saveState" class="camel_transport.StateProcessor">
+		<property name="method" value="getMaxIdAndSave" />
+		<property name="stateFile" value="state.xml" />
+	</bean>
 
-    <bean id="infDataSource" class="org.firebirdsql.pool.FBSimpleDataSource">
-        <property name="database" value="//localhost:3050/INFDATA"/>
-        <property name="userName" value="SYSDBA"/>
-        <property name="password" value="masterkey"/>
-        <property name="type" value="TYPE4"/>
-    </bean>
+	<bean id="mapOperator" class="camel_transport.MapOperatorProcessor">
+		<property name="nameMapFile" value="operatorNameMap.xml" />
+	</bean>
 
+	<bean id="infDataSource" class="org.firebirdsql.pool.FBSimpleDataSource">
+		<property name="database" value="//localhost:3050/INFDATA" />
+		<property name="userName" value="SYSDBA" />
+		<property name="password" value="masterkey" />
+		<property name="type" value="TYPE4" />
+		<property name="encoding" value="utf8" />
+
+	</bean>
+
+	<bean id="metaDataSource" class="oracle.jdbc.pool.OracleDataSource"
+		destroy-method="close">
+		<property name="URL" value="jdbc:oracle:thin:@localhost:1521/ORCL" />
+		<property name="user" value="metasearch_prod" />
+		<property name="password" value="q1" />
+		<property name="connectionCachingEnabled" value="true" />
+	</bean>
 
 </beans>
