@@ -9,9 +9,19 @@
 		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
 		http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
 
+	<bean id="bridgePropertyPlaceholder"
+		class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer">
+		<property name="locations">
+		  <list>
+		      <value>classpath:exporter.properties</value>
+		      <value>classpath:exporter.default.properties</value>
+		  </list>
+		</property>
+	</bean>
+
 	<c:camelContext xmlns="http://camel.apache.org/schema/spring">
 		<c:route>
-			<c:from uri="timer://timer1?period=2s" />
+			<c:from uri="timer://timer1?period={{interval}}" />
 			<c:process ref="loadState" />
 			<c:setBody>
 				<c:constant>
@@ -29,7 +39,7 @@
                  </c:constant>
 			</c:setBody>
 			<c:to
-				uri="jdbc:infDataSource?readSize=10&amp;useHeadersAsParameters=true" />
+				uri="jdbc:infDataSource?readSize={{inf.read_size}}&amp;useHeadersAsParameters=true" />
 			<c:aggregate completionTimeout="1000" completionSize="5"
 				groupExchanges="true">
 				<c:correlationExpression>
@@ -108,9 +118,9 @@
 	</bean>
 
 	<bean id="infDataSource" class="org.firebirdsql.pool.FBSimpleDataSource">
-		<property name="database" value="//localhost:3050/INFDATA" />
-		<property name="userName" value="SYSDBA" />
-		<property name="password" value="masterkey" />
+		<property name="database" value="${inf.database}" />
+		<property name="userName" value="${inf.user}" />
+		<property name="password" value="${inf.password}" />
 		<property name="type" value="TYPE4" />
 		<property name="encoding" value="utf8" />
 
@@ -118,9 +128,9 @@
 
 	<bean id="metaDataSource" class="oracle.jdbc.pool.OracleDataSource"
 		destroy-method="close">
-		<property name="URL" value="jdbc:oracle:thin:@localhost:1521/ORCL" />
-		<property name="user" value="metasearch_prod" />
-		<property name="password" value="q1" />
+		<property name="URL" value="${meta.database}" />
+		<property name="user" value="${meta.user}" />
+		<property name="password" value="${meta.password}" />
 		<property name="connectionCachingEnabled" value="true" />
 	</bean>
 
