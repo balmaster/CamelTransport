@@ -14,7 +14,7 @@ import org.apache.camel.Processor;
 
 public class MapOperatorProcessor implements Processor {
 
-	private static final String HEADER_OPERATOR_NAME = "operatorName";
+	public static final String HEADER_OPERATOR_NAME = "operatorName";
 	private Map<String,String> nameMap = new HashMap<String,String>();
 	private String nameMapFile;
 	
@@ -52,10 +52,7 @@ public class MapOperatorProcessor implements Processor {
 	public void process(Exchange exchange) throws Exception {
 		Message inMessage = exchange.getIn();
 		String inOperatorName = (String) inMessage.getHeader(HEADER_OPERATOR_NAME);
-		String outOperatorName = nameMap.get(HEADER_OPERATOR_NAME);
-		if(outOperatorName == null || outOperatorName.isEmpty()) {
-			throw new MapOperatorException("unknown user " + inOperatorName);
-		}
+		String outOperatorName = nameMap.get(inOperatorName);
 		inMessage.setHeader(HEADER_OPERATOR_NAME, outOperatorName);
 	}
 
