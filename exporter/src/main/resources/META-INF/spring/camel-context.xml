@@ -9,8 +9,8 @@
 		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
 		http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
 
-	<bean id="bridgePropertyPlaceholder"
-		class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer">
+	<bean id="configProperties"
+		class="org.springframework.beans.factory.config.PropertiesFactoryBean">
 		<property name="locations">
 			<list>
 				<value>classpath:exporter.default.properties</value>
@@ -19,7 +19,14 @@
 		</property>
 	</bean>
 
-	<bean id="routeBuilder" class="camel_transport.ExporterRouteBuilder"/>
+	<bean id="bridgePropertyPlaceholder"
+		class="org.apache.camel.spring.spi.BridgePropertyPlaceholderConfigurer">
+		<property name="properties" ref="configProperties" />
+	</bean>
+
+	<bean id="routeBuilder" class="camel_transport.ExporterRouteBuilder">
+		<property name="configProperties" ref="configProperties" />
+	</bean>
 
 	<bean id="loadState" class="camel_transport.StateProcessor">
 		<property name="method" value="load" />
@@ -52,9 +59,10 @@
 	</bean>
 
 	<c:camelContext xmlns="http://camel.apache.org/schema/spring">
-		<c:routeBuilder ref="routeBuilder"/>
-		
-		<c:threadPool id="metaQueryPool" poolSize="5" maxPoolSize="5" threadName="metaQuery"/>
+		<c:routeBuilder ref="routeBuilder" />
+
+		<c:threadPool id="metaQueryPool" poolSize="5"
+			maxPoolSize="5" threadName="metaQuery" />
 	</c:camelContext>
 
 

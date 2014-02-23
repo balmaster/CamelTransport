@@ -6,25 +6,44 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+
+import javax.annotation.Resource;
 
 import oracle.jdbc.proxy.annotation.GetProxy;
 
 import org.apache.camel.CamelContext;
+import org.apache.camel.Component;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder; 
 import org.apache.camel.component.exec.ExecBinding;
+import org.apache.camel.component.properties.PropertiesComponent;
+import org.apache.camel.component.properties.PropertiesParser;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
+import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 import org.apache.camel.processor.aggregate.GroupedExchangeAggregationStrategy;
+import org.apache.camel.spring.SpringCamelContext;
 import org.apache.commons.csv.CSVStrategy;
 import org.apache.commons.csv.writer.CSVConfig;
 import org.apache.commons.csv.writer.CSVField;
 import org.apache.commons.lang.time.DateUtils;
+import org.springframework.beans.factory.config.PropertiesFactoryBean;
 
 public class ExporterRouteBuilder extends RouteBuilder {
 
+	//@Resource 
+	private Properties configProperties;
+
+	public Properties getConfigProperties() {
+		return configProperties;
+	}
+
+	public void setConfigProperties(Properties configProperties) {
+		this.configProperties = configProperties;
+	}
 
 	@Override
 	public void configure() throws Exception {
@@ -40,6 +59,9 @@ public class ExporterRouteBuilder extends RouteBuilder {
 		fieldList.add(new CSVField("metaObjId"));
 		config.setFields(fieldList);
 		csv.setConfig(config );
+		
+		
+		final int toDateDeltaMin =  Integer.parseInt(getConfigProperties().getProperty("meta.to_date_delta_min"));
 		
 		from("timer://timer1?period={{interval}}")
 			.processRef("loadState")
@@ -73,7 +95,7 @@ public class ExporterRouteBuilder extends RouteBuilder {
 						Timestamp toDate = (Timestamp) inMessage.getHeader("toDate");
 						Calendar cal = Calendar.getInstance();
 						cal.setTimeInMillis(toDate.getTime());
-						cal.add(Calendar.MINUTE, 60*10);
+						cal.add(Calendar.MINUTE,  toDateDeltaMin);
 						inMessage.setHeader("toDate",new Timestamp(cal.getTimeInMillis()));
 					}
 				})
@@ -139,7 +161,10 @@ public class ExporterRouteBuilder extends RouteBuilder {
 				}
 			}).constant(true).completionSize(simple("{{export.batch.size}}")).completionTimeout(simple("{{export.batch.timeout}}"))
 				//.to("log:convertLog");
-				.to("file:{{export.csv_dir}}");
+				//.to("file:{{export.csv_dir}}")
+				.to("sftp:{{export.sftp.user}}@{{export.sftp.address}}/{{export.sftp.csv_dir}}?password={{export.sftp.password}}");
+		from("file:{{export.mp3_dir}}?autoCreate=true")
+			.to("sftp:{{export.sftp.user}}@{{export.sftp.address}}/{{export.sftp.mp3_dir}}?password={{export.sftp.password}}");	
 	}
 
 }
