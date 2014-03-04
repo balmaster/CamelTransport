@@ -67,5 +67,6 @@
   </dependencies>
 	<modules>
 		<module>exporter</module>
+		<module>importer</module>
 	</modules>
 </project>
