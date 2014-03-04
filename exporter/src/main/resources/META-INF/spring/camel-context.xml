@@ -50,12 +50,19 @@
 		<property name="encoding" value="utf8" />
 	</bean>
 
-	<bean id="metaDataSource" class="oracle.jdbc.pool.OracleDataSource"
-		destroy-method="close">
+	<bean id="metaDataSource" class="oracle.ucp.jdbc.PoolDataSourceFactory"
+		factory-method="getPoolDataSource">
 		<property name="URL" value="${meta.database}" />
 		<property name="user" value="${meta.user}" />
 		<property name="password" value="${meta.password}" />
-		<property name="connectionCachingEnabled" value="true" />
+		<property name="connectionFactoryClassName" value="oracle.jdbc.pool.OracleDataSource" />
+		<property name="connectionPoolName" value="metaDataPool" />
+		<property name="minPoolSize" value="5" />
+		<property name="maxPoolSize" value="5" />
+		<property name="initialPoolSize" value="5" />
+		<property name="inactiveConnectionTimeout" value="120" />
+		<property name="validateConnectionOnBorrow" value="true" />
+		<property name="maxStatements" value="10" />
 	</bean>
 
 	<c:camelContext xmlns="http://camel.apache.org/schema/spring">

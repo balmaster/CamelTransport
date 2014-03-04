@@ -1,1 +1,2 @@
-mvn install:install-file -Dfile=ojdbc6.jar -DgroupId=oracle -DartifactId=ojdbc6 -Dversion=11.2.0.3.0 -Dpackaging=jar
+call mvn install:install-file -Dfile=ojdbc6.jar -DgroupId=oracle -DartifactId=ojdbc6 -Dversion=11.2.0.3.0 -Dpackaging=jar
+call mvn install:install-file -Dfile=ucp.jar -DgroupId=oracle -DartifactId=ucp -Dversion=11.1.0.7 -Dpackaging=jar
