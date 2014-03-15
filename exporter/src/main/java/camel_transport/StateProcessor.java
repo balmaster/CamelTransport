@@ -62,7 +62,7 @@ class StateProcessor implements Processor {
 
         List<Map<String,Object>> messageList = (List<Map<String, Object>>) inMessage.getBody();
       
-        Integer maxId = 0;
+        Integer maxId = inMessage.getHeader(A_RECORDS_CURRENT_ID, Integer.class);
         for (Map<String,Object> m : messageList) {
         	maxId = Math.max(maxId,(Integer) m.get("ID"));
 		}

@@ -15,6 +15,7 @@ import oracle.jdbc.proxy.annotation.GetProxy;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Component;
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder; 
@@ -64,7 +65,16 @@ public class ExporterRouteBuilder extends RouteBuilder {
 		final int toDateDeltaMin =  Integer.parseInt(getConfigProperties().getProperty("meta.to_date_delta_min"));
 		
 		from("timer://timer1?period={{interval}}")
+		    .to("direct:start");
+		
+		from("direct:start")
+		    .setHeader("processEndpoint", constant("direct:process"))
+		    .dynamicRouter(header("processEndpoint"))
+		    .log(LoggingLevel.DEBUG,"no new records found");
+		
+		from("direct:process")
 			.processRef("loadState")
+			.log(LoggingLevel.DEBUG, "max record id: ${header[aRecordsCurrentId]}")
 			.setBody()
 				.constant(new StringBuilder()
 					.append(" SELECT ar.ID, ") 
@@ -79,6 +89,14 @@ public class ExporterRouteBuilder extends RouteBuilder {
                     .append(" and ar.id > :?aRecordsCurrentId ")
                     .append(" order by ar.id").toString())
             .to("jdbc:infDataSource?readSize={{inf.read_size}}&useHeadersAsParameters=true")
+            .log(LoggingLevel.DEBUG, "query records: ${header[CamelJdbcRowCount]}")
+            .choice()
+                .when(simple("${header[CamelJdbcRowCount]} > 0"))
+                    .setHeader("processEndpoint",constant("direct:process"))
+                .otherwise()    
+                    .setHeader("processEndpoint",constant(null))
+            .end()
+            .log(LoggingLevel.DEBUG,"process")
             .split(body()).parallelProcessing().executorServiceRef("metaQueryPool")
             	.setHeader("aRecordsCurrentId").simple("${body['ID']}")
 				.setHeader("operatorName").simple("${body['OPERATOR_NAME']}")
