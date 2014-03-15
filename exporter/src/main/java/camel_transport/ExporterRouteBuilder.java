@@ -179,8 +179,11 @@ public class ExporterRouteBuilder extends RouteBuilder {
 				}
 			}).constant(true).completionSize(simple("{{export.batch.size}}")).completionTimeout(simple("{{export.batch.timeout}}"))
 				//.to("log:convertLog");
-				//.to("file:{{export.csv_dir}}")
-				.to("sftp:{{export.sftp.user}}@{{export.sftp.address}}/{{export.sftp.csv_dir}}?password={{export.sftp.password}}");
+				.to("file:{{export.csv_dir}}");
+		
+        from("file:{{export.csv_dir}}?autoCreate=true")
+            .to("sftp:{{export.sftp.user}}@{{export.sftp.address}}/{{export.sftp.csv_dir}}?password={{export.sftp.password}}"); 
+
 		from("file:{{export.mp3_dir}}?autoCreate=true")
 			.to("sftp:{{export.sftp.user}}@{{export.sftp.address}}/{{export.sftp.mp3_dir}}?password={{export.sftp.password}}");	
 	}

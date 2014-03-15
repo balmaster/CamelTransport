@@ -7,3 +7,4 @@ target
 *.log
 state.xml
 /exporter/exporter.properties
+/exporter/call_data
