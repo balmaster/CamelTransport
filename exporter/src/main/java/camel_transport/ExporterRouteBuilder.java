@@ -182,10 +182,10 @@ public class ExporterRouteBuilder extends RouteBuilder {
 				.to("file:{{export.csv_dir}}");
 		
         from("file:{{export.csv_dir}}?autoCreate=true")
-            .to("sftp:{{export.sftp.user}}@{{export.sftp.address}}/{{export.sftp.csv_dir}}?password={{export.sftp.password}}"); 
+            .to("sftp:{{export.sftp.user}}@{{export.sftp.address}}/{{export.sftp.csv_dir}}?privateKeyFile={{export.sftp.private_key_file}}"); 
 
 		from("file:{{export.mp3_dir}}?autoCreate=true")
-			.to("sftp:{{export.sftp.user}}@{{export.sftp.address}}/{{export.sftp.mp3_dir}}?password={{export.sftp.password}}");	
+			.to("sftp:{{export.sftp.user}}@{{export.sftp.address}}/{{export.sftp.mp3_dir}}?privateKeyFile={{export.sftp.private_key_file}}");	
 	}
 
 }
