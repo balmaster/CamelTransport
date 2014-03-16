@@ -134,7 +134,8 @@ public class ExporterRouteBuilder extends RouteBuilder {
 							.setHeader("metaObjToDate").simple("${body['TO_DATE']}")
 							.inOnly("seda:convert")
 						.end()	
-			.end()
+					.end()
+				.end()
 			.processRef("saveState");
 		
 		from("seda:convert")
