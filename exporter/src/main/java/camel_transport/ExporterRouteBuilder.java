@@ -117,15 +117,15 @@ public class ExporterRouteBuilder extends RouteBuilder {
 						inMessage.setHeader("toDate",new Timestamp(cal.getTimeInMillis()));
 					}
 				})
-				//.choice()
-					//.when(header(MapOperatorProcessor.HEADER_OPERATOR_NAME).isNotNull())
+				.choice()
+					.when(header(MapOperatorProcessor.HEADER_OPERATOR_NAME).isNotNull())
 						.setBody(constant(new StringBuilder()
 							.append(" select mos.to_date,mos.meta_obj_id,mos.act_id, pu.name")
 							.append(" from meta_obj_stats mos join ps_user pu on mos.ps_user_id=pu.id")
 							.append(" where")
 							.append(" (mos.to_date between cast(:?fromDate as date) and")
 							.append(" cast(:?toDate as date))")
-							//.append(" and pu.name = :?operatorName")
+							.append(" and pu.name = :?operatorName")
 							.toString()))
 						.to("jdbc:metaDataSource?readSize=1&useHeadersAsParameters=true")
 						.split(body())
@@ -139,8 +139,8 @@ public class ExporterRouteBuilder extends RouteBuilder {
 		
 		from("seda:convert")
 			.setHeader("metaObjToDate").simple("${body['TO_DATE']}")
-			.setHeader(ExecBinding.EXEC_COMMAND_ARGS).simple("-i ${properties:inf.wav_dir}2013_12_12_00_31_24_352_1001.wav -i ${properties:inf.wav_dir}2013_12_12_00_40_52_289_1001.wav -filter_complex amerge -c:a libmp3lame -q:a 4 ${properties:export.mp3_dir}${header.actFile}")
-			//.setHeader(ExecBinding.EXEC_COMMAND_ARGS).simple("-i ${properties:inf.wav_dir}${header.fileA} -i ${properties:inf.wav_dir}${header.fileB} -filter_complex amerge -c:a libmp3lame -q:a 4 ${properties:export.mp3_dir}${header.actFile}")
+			//.setHeader(ExecBinding.EXEC_COMMAND_ARGS).simple("-i ${properties:inf.wav_dir}2013_12_12_00_31_24_352_1001.wav -i ${properties:inf.wav_dir}2013_12_12_00_40_52_289_1001.wav -filter_complex amerge -c:a libmp3lame -q:a 4 ${properties:export.mp3_dir}${header.actFile}")
+			.setHeader(ExecBinding.EXEC_COMMAND_ARGS).simple("-i ${properties:inf.wav_dir}${header.fileA} -i ${properties:inf.wav_dir}${header.fileB} -filter_complex amerge -c:a libmp3lame -q:a 4 ${properties:export.mp3_dir}${header.actFile}")
 			.to("exec://{{ffmpeg.file}}?useStderrOnEmptyStdout=true")
 			//.to("log:convertLog?showHeaders=true")
 			.process(new Processor() {
