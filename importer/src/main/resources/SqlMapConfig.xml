@@ -1,0 +1,21 @@
+<!DOCTYPE configuration
+    PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+
+	<settings>
+		<setting name="useGeneratedKeys" value="true" />
+	</settings>
+
+	<!-- Use type aliases to avoid typing the full classname every time. -->
+	<typeAliases>
+		<typeAlias alias="Conversation" type="camel_transport.entity.Conversation" />
+	</typeAliases>
+
+	<!-- mapping files -->
+	<mappers>
+		<mapper resource="mybatis/Conversation.xml" />
+	</mappers>
+
+</configuration>

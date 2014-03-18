@@ -1,0 +1,27 @@
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+<mapper namespace="Conversation">
+ 
+ <!-- Result maps describe the mapping between the columns returned
+ from a query, and the class properties.  A result map isn't
+ necessary if the columns (or aliases) match to the properties
+ exactly. -->
+  <resultMap id="ConversationResult" type="Conversation">
+    <result property="actFile" column="act_file"/>
+    <result property="fromDate" column="from_date"/>
+    <result property="toDate" column="to_date"/>
+    <result property="metaObjToDate" column="meta_obj_to_date"/>
+    <result property="metaObjId" column="meta_obj_id"/>
+  </resultMap>
+ 
+  <select id="selectConversation" resultMap="ConversationResult">
+    select * from call_data_conversation where act_file = #{actFile} 
+  </select>
+ 
+  <insert id="insertConversation" parameterType="Conversation">
+    insert into call_data_conversation (act_file,from_date,to_date,meta_obj_to_date,meta_obj_id)
+    values (#{actFile}, #{fromDate}, #{toDate}, #{metaObjToDate}, #{metaObjId})
+  </insert>
+</mapper>
