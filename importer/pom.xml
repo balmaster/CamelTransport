@@ -130,6 +130,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.4</version>
 				<configuration>
 					<archive>
 						<manifest>
@@ -138,6 +139,13 @@
 							<mainClass>org.apache.camel.spring.Main</mainClass>
 						</manifest>
 					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.4</version>
+				<configuration>
+					<descriptor>src/main/assembly/dist.xml</descriptor>
 				</configuration>
 			</plugin>
 		</plugins>
