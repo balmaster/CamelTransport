@@ -20,7 +20,6 @@
 			<outputDirectory>/</outputDirectory>
 			<includes>
 				<include>operatorNameMap.xml</include>
-				<include>exporter.properties</include>
 				<include>ReadMe.txt</include>
 			</includes>
 		</fileSet>
