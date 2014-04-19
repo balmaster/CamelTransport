@@ -1,5 +1,6 @@
 package camel_transport;
 
+import java.io.File;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -20,6 +21,7 @@ import org.apache.camel.Message;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder; 
 import org.apache.camel.component.exec.ExecBinding;
+import org.apache.camel.component.file.remote.RemoteFileConfiguration.PathSeparator;
 import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.component.properties.PropertiesParser;
 import org.apache.camel.dataformat.csv.CsvDataFormat;
@@ -30,6 +32,7 @@ import org.apache.camel.spring.SpringCamelContext;
 import org.apache.commons.csv.CSVStrategy;
 import org.apache.commons.csv.writer.CSVConfig;
 import org.apache.commons.csv.writer.CSVField;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.config.PropertiesFactoryBean;
 
@@ -142,6 +145,16 @@ public class ExporterRouteBuilder extends RouteBuilder {
 		
 		from("seda:convert")
 			.setHeader("metaObjToDate").simple("${body['TO_DATE']}")
+			.process(new Processor() {
+
+                @Override
+                public void process(Exchange exchange) throws Exception {
+                    Message inMessage = exchange.getIn();
+                    inMessage.setHeader("fileA", StringUtils.replaceChars(inMessage.getHeader("fileA",String.class), '\\', File.separatorChar));
+                    inMessage.setHeader("fileB", StringUtils.replaceChars(inMessage.getHeader("fileB",String.class), '\\', File.separatorChar));
+                }
+			    
+			})
 			//.setHeader(ExecBinding.EXEC_COMMAND_ARGS).simple("-i ${properties:inf.wav_dir}2013_12_12_00_31_24_352_1001.wav -i ${properties:inf.wav_dir}2013_12_12_00_40_52_289_1001.wav -filter_complex amerge -c:a libmp3lame -q:a 4 ${properties:export.mp3_dir}${header.actFile}")
 			.setHeader(ExecBinding.EXEC_COMMAND_ARGS).simple("-i ${properties:inf.wav_dir}${header.fileA} -i ${properties:inf.wav_dir}${header.fileB} -filter_complex amerge -c:a libmp3lame -q:a 4 ${properties:export.mp3_dir}${header.actFile}")
 			.to("exec://{{ffmpeg.file}}?useStderrOnEmptyStdout=true")
