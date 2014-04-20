@@ -18,6 +18,7 @@ import org.apache.camel.Component;
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.Message;
+import org.apache.camel.Predicate;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder; 
 import org.apache.camel.component.exec.ExecBinding;
@@ -159,43 +160,52 @@ public class ExporterRouteBuilder extends RouteBuilder {
 			.setHeader(ExecBinding.EXEC_COMMAND_ARGS).simple("-i ${properties:inf.wav_dir}${header.fileA} -i ${properties:inf.wav_dir}${header.fileB} -filter_complex amerge -c:a libmp3lame -q:a 4 ${properties:export.mp3_dir}${header.actFile}")
 			.to("exec://{{ffmpeg.file}}?useStderrOnEmptyStdout=true")
 			//.to("log:convertLog?showHeaders=true")
-			.process(new Processor() {
-				@Override
-				public void process(Exchange exchange) throws Exception {
-					Message inMessage = exchange.getIn();
-					Map<String,Object> body = new HashMap<String,Object>();
-					body.put("actFile",inMessage.getHeader("actFile"));
-					body.put("fromDate",inMessage.getHeader("fromDate"));
-					body.put("toDate",inMessage.getHeader("toDate"));
-					body.put("metaObjToDate",inMessage.getHeader("metaObjToDate"));
-					body.put("metaObjId",inMessage.getHeader("metaObjId"));
-					inMessage.setBody(body);
-				}
-			})
-			.marshal(csv)
-			.aggregate(new AggregationStrategy() {
-				@Override
-				public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
-		            if (oldExchange == null) {
-		                return newExchange;
-		            }
+			.choice()
+			    .when(new Predicate() {
+                    
+                    @Override
+                    public boolean matches(Exchange exchange) {
+                        Message inMessage = exchange.getIn();
+                        return new File(configProperties.getProperty("export.mp3_dir"),inMessage.getHeader("actFile",String.class)).exists();
+                    }
+                })
+                .process(new Processor() {
+                    @Override
+                    public void process(Exchange exchange) throws Exception {
+                        Message inMessage = exchange.getIn();
+                        Map<String,Object> body = new HashMap<String,Object>();
+                        body.put("actFile",inMessage.getHeader("actFile"));
+                        body.put("fromDate",inMessage.getHeader("fromDate"));
+                        body.put("toDate",inMessage.getHeader("toDate"));
+                        body.put("metaObjToDate",inMessage.getHeader("metaObjToDate"));
+                        body.put("metaObjId",inMessage.getHeader("metaObjId"));
+                        inMessage.setBody(body);
+                    }
+                })
+                .marshal(csv)
+                .aggregate(new AggregationStrategy() {
+                    @Override
+                    public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {
+                        if (oldExchange == null) {
+                            return newExchange;
+                        }
 
-		            if (newExchange == null) {
-		                return oldExchange;
-		            }
+                        if (newExchange == null) {
+                            return oldExchange;
+                        }
 
-		            Message m1 = oldExchange.getIn();
-		            Message m2 = newExchange.getIn();
+                        Message m1 = oldExchange.getIn();
+                        Message m2 = newExchange.getIn();
 
-		            String s1 = m1.getBody(String.class);
-		            String s2 = m2.getBody(String.class);
+                        String s1 = m1.getBody(String.class);
+                        String s2 = m2.getBody(String.class);
 
-		            oldExchange.getIn().setBody(s1 + s2);
-		            return oldExchange;
-				}
-			}).constant(true).completionSize(simple("{{export.batch.size}}")).completionTimeout(simple("{{export.batch.timeout}}"))
-				//.to("log:convertLog");
-				.to("file:{{export.csv_dir}}");
+                        oldExchange.getIn().setBody(s1 + s2);
+                        return oldExchange;
+                    }
+                }).constant(true).completionSize(simple("{{export.batch.size}}")).completionTimeout(simple("{{export.batch.timeout}}"))
+				    //.to("log:convertLog");
+				    .to("file:{{export.csv_dir}}");
 		
         from("file:{{export.csv_dir}}?autoCreate=true")
             .to("sftp:{{export.sftp.user}}@{{export.sftp.address}}/{{export.sftp.csv_dir}}?privateKeyFile={{export.sftp.private_key_file}}"); 
