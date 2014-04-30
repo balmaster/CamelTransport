@@ -157,18 +157,11 @@ public class ExporterRouteBuilder extends RouteBuilder {
 			    
 			})
 			//.setHeader(ExecBinding.EXEC_COMMAND_ARGS).simple("-i ${properties:inf.wav_dir}2013_12_12_00_31_24_352_1001.wav -i ${properties:inf.wav_dir}2013_12_12_00_40_52_289_1001.wav -filter_complex amerge -c:a libmp3lame -q:a 4 ${properties:export.mp3_dir}${header.actFile}")
-			.setHeader(ExecBinding.EXEC_COMMAND_ARGS).simple("-i ${properties:inf.wav_dir}${header.fileA} -i ${properties:inf.wav_dir}${header.fileB} -filter_complex ${ffmpeg.options} ${properties:export.mp3_dir}${header.actFile}")
+			.setHeader(ExecBinding.EXEC_COMMAND_ARGS).simple("-i ${properties:inf.wav_dir}${header.fileA} -i ${properties:inf.wav_dir}${header.fileB} -filter_complex ${properties:ffmpeg.options} ${properties:export.mp3_dir}${header.actFile}")
 			.to("exec://{{ffmpeg.file}}?useStderrOnEmptyStdout=true")
 			//.to("log:convertLog?showHeaders=true")
 			.choice()
-			    .when(new Predicate() {
-                    
-                    @Override
-                    public boolean matches(Exchange exchange) {
-                        Message inMessage = exchange.getIn();
-                        return new File(configProperties.getProperty("export.mp3_dir"),inMessage.getHeader("actFile",String.class)).exists();
-                    }
-                })
+			    .when(header(ExecBinding.EXEC_EXIT_VALUE).isEqualTo(0))
                 .process(new Processor() {
                     @Override
                     public void process(Exchange exchange) throws Exception {
