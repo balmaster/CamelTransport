@@ -19,7 +19,6 @@
 			<directory>${basedir}</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
-				<include>importer.properties</include>
 				<include>ReadMe.txt</include>
 			</includes>
 		</fileSet>
