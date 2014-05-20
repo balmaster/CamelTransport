@@ -136,6 +136,7 @@
 						<manifest>
 							<addClasspath>true</addClasspath>
 							<classpathPrefix>lib/</classpathPrefix>
+							<useUniqueVersions>false</useUniqueVersions>
 							<mainClass>org.apache.camel.spring.Main</mainClass>
 						</manifest>
 					</archive>
