@@ -66,7 +66,7 @@ public class ExporterRouteBuilder extends RouteBuilder {
 		csv.setConfig(config );
 		
 		
-		final int toDateDeltaMin =  Integer.parseInt(getConfigProperties().getProperty("meta.to_date_delta_min"));
+		final int toDateDelta =  Integer.parseInt(getConfigProperties().getProperty("meta.to_date_delta","0"));
 		
 		from("timer://timer1?period={{interval}}")
 		    .to("direct:start");
@@ -114,12 +114,18 @@ public class ExporterRouteBuilder extends RouteBuilder {
 					@Override
 					public void process(Exchange exchange) throws Exception {
 						Message inMessage = exchange.getIn();
-						Timestamp toDate = (Timestamp) inMessage.getHeader("toDate");
-						Calendar cal = Calendar.getInstance();
-						cal.setTimeInMillis(toDate.getTime());
-						cal.add(Calendar.MINUTE,  toDateDeltaMin);
-						inMessage.setHeader("toDate",new Timestamp(cal.getTimeInMillis()));
+						Timestamp fromDate = (Timestamp) inMessage.getHeader("fromDate");
+                        Timestamp toDate = (Timestamp) inMessage.getHeader("toDate");
+                        inMessage.setHeader("fromDate",new Timestamp(addSeconds(toDateDelta, fromDate).getTimeInMillis()));
+						inMessage.setHeader("toDate",new Timestamp(addSeconds(toDateDelta, toDate).getTimeInMillis()));
 					}
+
+                    private Calendar addSeconds(final int toDateDelta, Timestamp toDate) {
+                        Calendar cal = Calendar.getInstance();
+						cal.setTimeInMillis(toDate.getTime());
+						cal.add(Calendar.SECOND,  toDateDelta);
+                        return cal;
+                    }
 				})
 				.choice()
 					.when(header(MapOperatorProcessor.HEADER_OPERATOR_NAME).isNotNull())
