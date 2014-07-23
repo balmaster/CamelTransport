@@ -19,8 +19,6 @@
 			<directory>${basedir}</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
-				<include>operatorNameMap.xml</include>
-				<include>ReadMe.txt</include>
 			</includes>
 		</fileSet>
 		<fileSet>
@@ -30,7 +28,14 @@
 				<include>exporter.default.properties</include>
 			</includes>
 		</fileSet>
-				<fileSet>
+		<fileSet>
+			<directory>${basedir}</directory>
+			<outputDirectory>/default</outputDirectory>
+			<includes>
+				<include>operatorNameMap.xml</include>
+			</includes>
+		</fileSet>
+		<fileSet>
 			<directory>${basedir}/key</directory>
 			<outputDirectory>/key</outputDirectory>
 			<includes>
