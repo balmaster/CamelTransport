@@ -90,7 +90,11 @@ public class ImporterRouteBuilder extends RouteBuilder {
                                 inMessage.setBody(conversation);
                             }
                         })
-                        .to("mybatis:insertConversation?statementType=Insert&executorType=reuse")
+                        .doTry()
+                            .to("mybatis:insertConversation?statementType=Insert&executorType=reuse")
+                        .doCatch(Exception.class)
+                            .log(LoggingLevel.ERROR,"Conversation ${exception.message} ") 
+                        .endChoice()
                         .log(LoggingLevel.INFO,"Conversation ${header[actFile]} added")
                     .otherwise()
                         .log(LoggingLevel.INFO,"Conversation ${header[actFile]} already exists");
